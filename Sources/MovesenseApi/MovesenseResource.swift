@@ -19,10 +19,15 @@ public enum MovesenseResourceType: String, Codable {
     case gyro
     case gyroConfig
     case gyroInfo
+    case magn
+    case magnInfo
+    case imu
     case info
     case led
     case systemEnergy
     case systemMode
+    case settingsUartOn
+    case systemTime
 }
 
 public extension MovesenseResourceType {
@@ -39,10 +44,15 @@ public extension MovesenseResourceType {
         case .gyro: return "Meas/Gyro"
         case .gyroConfig: return "Meas/Gyro/Config"
         case .gyroInfo: return "Meas/Gyro/Info"
+        case .magn: return "Meas/Magn"
+        case .magnInfo: return "Meas/Magn/Info"
+        case .imu: return "Meas/IMU6"
         case .info: return "Info"
         case .led: return "Component/Led"
         case .systemEnergy: return "System/Energy"
         case .systemMode: return "System/Mode"
+        case .settingsUartOn: return "System/Settings/UartOn"
+        case .systemTime: return "Time"
         }
     }
 
@@ -58,10 +68,15 @@ public extension MovesenseResourceType {
         case .gyro: return "Gyroscope"
         case .gyroConfig: return "Gyroscope Config"
         case .gyroInfo: return "Gyroscope Info"
+        case .magn: return "Magnetometer"
+        case .magnInfo: return "Magnetometer Info"
+        case .imu: return "IMU"
         case .info: return "Info"
         case .led: return "LED"
         case .systemEnergy: return "System Energy"
         case .systemMode: return "System Mode"
+        case .settingsUartOn: return "Uart state"
+        case .systemTime: return "Time"
         }
     }
 
@@ -71,6 +86,9 @@ public extension MovesenseResourceType {
         case .ecg: return "ECG"
         case .heartRate: return "HRA"
         case .gyro: return "GYR"
+        case .magn: return "MAGN"
+        case .imu: return "IMU"
+        case .systemTime: return "TIM"
         default: return self.resourceName.prefix(3).uppercased()
         }
     }
@@ -244,6 +262,7 @@ public struct MovesenseResourceGyro: MovesenseResource {
     }
 }
 
+
 public struct MovesenseResourceGyroConfig: MovesenseResource {
 
     internal let dpsRange: MovesenseMethodParameterDpsRange
@@ -281,6 +300,70 @@ struct MovesenseResourceGyroInfo: MovesenseResource {
     let methods: [MovesenseMethod] = [.get]
 }
 
+public struct MovesenseResourceMagn: MovesenseResource {
+
+    internal let sampleRate: MovesenseMethodParameterSampleRate
+
+    public let resourceType: MovesenseResourceType = .magn
+    public let methods: [MovesenseMethod] = [.subscribe, .unsubscribe]
+
+    public var methodParameters: [(MovesenseMethod, String, Any.Type, String)] {
+        return sampleRate.values.map { rate in
+            return (.subscribe, sampleRate.name, sampleRate.valueType, rate.description)
+        }
+    }
+
+    init(_ sampleRates: [UInt]) {
+        self.sampleRate = MovesenseMethodParameterSampleRate(values: sampleRates)
+    }
+
+    public func requestParameter(_ index: Int) -> MovesenseRequestParameter? {
+        guard let parameter = methodParameters[safe: index] else { return nil }
+
+        switch parameter.2 {
+        case is UInt.Type:
+            guard let value = UInt(parameter.3) else { return nil }
+            return sampleRate.setter(value)
+        default: return nil
+        }
+    }
+}
+
+struct MovesenseResourceMagnInfo: MovesenseResource {
+
+    let resourceType: MovesenseResourceType = .magnInfo
+    let methods: [MovesenseMethod] = [.get]
+}
+
+public struct MovesenseResourceIMU: MovesenseResource {
+
+    internal let sampleRate: MovesenseMethodParameterSampleRate
+
+    public let resourceType: MovesenseResourceType = .imu
+    public let methods: [MovesenseMethod] = [.subscribe, .unsubscribe]
+
+    public var methodParameters: [(MovesenseMethod, String, Any.Type, String)] {
+        return sampleRate.values.map { rate in
+            return (.subscribe, sampleRate.name, sampleRate.valueType, rate.description)
+        }
+    }
+
+    init(_ sampleRates: [UInt]) {
+        self.sampleRate = MovesenseMethodParameterSampleRate(values: sampleRates)
+    }
+
+    public func requestParameter(_ index: Int) -> MovesenseRequestParameter? {
+        guard let parameter = methodParameters[safe: index] else { return nil }
+
+        switch parameter.2 {
+        case is UInt.Type:
+            guard let value = UInt(parameter.3) else { return nil }
+            return sampleRate.setter(value)
+        default: return nil
+        }
+    }
+}
+
 struct MovesenseResourceLed: MovesenseResource {
 
     internal let isOn: MovesenseMethodParameterIsOn = MovesenseMethodParameterIsOn()
@@ -312,6 +395,60 @@ public struct MovesenseResourceSystemEnergy: MovesenseResource {
 
     public let resourceType: MovesenseResourceType = .systemEnergy
     public let methods: [MovesenseMethod] = [.get]
+}
+
+struct MovesenseResourceSettingsUartOn: MovesenseResource {
+
+    internal let isOn: MovesenseMethodParameterIsOn = MovesenseMethodParameterIsOn()
+
+    public let resourceType: MovesenseResourceType = .settingsUartOn
+    public let methods: [MovesenseMethod] = [.get, .put]
+
+    var methodParameters: [(MovesenseMethod, String, Any.Type, String)] {
+        return isOn.values.map { uartOn in
+            return (.put, isOn.name, isOn.valueType, uartOn.description)
+        }
+    }
+
+    func requestParameter(_ index: Int) -> MovesenseRequestParameter? {
+        guard let parameter = methodParameters[safe: index] else {
+            return nil
+        }
+
+        switch parameter.2 {
+        case is Bool.Type:
+            guard let value = Bool(parameter.3) else { return nil }
+            return isOn.setter(value)
+        default: return nil
+        }
+    }
+}
+
+public struct MovesenseResourceSystemTime: MovesenseResource {
+
+    internal let t: MovesenseMethodParameterSystemTime = MovesenseMethodParameterSystemTime()
+
+    public let resourceType: MovesenseResourceType = .systemTime
+    public let methods: [MovesenseMethod] = [.get, .put]
+
+    public var methodParameters: [(MovesenseMethod, String, Any.Type, String)] {
+        return t.values.map { st in
+            return (.put, t.name, t.valueType, st.description)
+        }
+    }
+
+    public func requestParameter(_ index: Int) -> MovesenseRequestParameter? {
+        guard let parameter = methodParameters[safe: index] else {
+            return nil
+        }
+
+        switch parameter.2 {
+        case is Int64.Type:
+            guard let value = Int64(parameter.3) else { return nil }
+            return t.setter(value)
+        default: return nil
+        }
+    }
 }
 
 public struct MovesenseResourceSystemMode: MovesenseResource {

@@ -34,6 +34,10 @@ final class MovesenseBleControllerConcrete: NSObject, MovesenseBleController {
 
     private var centralManager: CBCentralManager?
 
+    // Track peripherals already reported via retrieveConnectedPeripherals
+    // to avoid repeated discovery on every startScan call
+    private var reportedConnectedPeripherals: Set<UUID> = []
+
     override init() {
         self.bleQueue = DispatchQueue(label: "com.movesense.ble")
         super.init()
@@ -50,6 +54,23 @@ final class MovesenseBleControllerConcrete: NSObject, MovesenseBleController {
         if centralManager.state != .poweredOn {
             NSLog("MovesenseBleController::startScan Bluetooth not on.")
             return
+        }
+
+        // Check for peripherals already connected at the system level.
+        // iOS may auto-reconnect BLE devices, preventing them from advertising.
+        // Disconnect them so the sensor resumes advertising and MDS can connect properly.
+        for serviceUUID in Movesense.MOVESENSE_SERVICES {
+            let connected = centralManager.retrieveConnectedPeripherals(withServices: [serviceUUID])
+            for peripheral in connected {
+                guard !reportedConnectedPeripherals.contains(peripheral.identifier) else {
+                    continue
+                }
+                if let localName = peripheral.name, isMovesense(localName) {
+                    NSLog("MovesenseBleController::startScan releasing system-connected peripheral: \(localName) uuid=\(peripheral.identifier)")
+                    reportedConnectedPeripherals.insert(peripheral.identifier)
+                    centralManager.cancelPeripheralConnection(peripheral)
+                }
+            }
         }
 
         centralManager.scanForPeripherals(withServices: Movesense.MOVESENSE_SERVICES,
@@ -71,6 +92,7 @@ final class MovesenseBleControllerConcrete: NSObject, MovesenseBleController {
             return
         }
 
+        reportedConnectedPeripherals.removeAll()
         centralManager.stopScan()
     }
 

@@ -16,10 +16,13 @@ public enum MovesenseResponse {
     case ecgInfo(MovesenseResponseCode, MovesenseRequest, MovesenseEcgInfo)
     case gyroConfig(MovesenseResponseCode, MovesenseRequest, MovesenseGyroConfig?)
     case gyroInfo(MovesenseResponseCode, MovesenseRequest, MovesenseGyroInfo)
+    case magnInfo(MovesenseResponseCode, MovesenseRequest, MovesenseMagnInfo)
     case info(MovesenseResponseCode, MovesenseRequest, MovesenseInfo)
     case response(MovesenseResponseCode, MovesenseRequest)
     case systemEnergy(MovesenseResponseCode, MovesenseRequest, MovesenseSystemEnergy)
     case systemMode(MovesenseResponseCode, MovesenseRequest, MovesenseSystemMode)
+    case settingsUartOn(MovesenseResponseCode, MovesenseRequest, Bool?)
+    case systemTime(MovesenseResponseCode, MovesenseRequest, Int64?)
 }
 
 extension MovesenseResponse: CustomStringConvertible {
@@ -32,10 +35,13 @@ extension MovesenseResponse: CustomStringConvertible {
         case .ecgInfo(let code, _, let info): return "\(code), \((info))"
         case .gyroConfig(let code, _, let config): return "\(code), \(String(describing: config))"
         case .gyroInfo(let code, _, let info): return "\(code), \((info))"
+        case .magnInfo(let code, _, let info): return "\(code), \((info))"
         case .info(let code, _, let info): return "\(code), \(info)"
         case .response(let code, _): return "\(code)"
         case .systemEnergy(let code, _, let energy): return "\(code), \(String(describing: energy))"
         case .systemMode(let code, _, let mode): return "\(code), \(String(describing: mode))"
+        case .settingsUartOn(let code, _, let isOn): return "\(code), \(String(describing: isOn))"
+        case .systemTime(let code, _, let t): return "\(code), \(String(describing: t))"
         }
     }
 }

@@ -34,6 +34,10 @@ internal class MovesenseApiConcrete: MovesenseApi {
     }
 
     // MovesenseApiProtocol
+    func mdsVersion() -> String?  {
+        return controller.mdsVersion()
+    }
+
     func startScan() {
         controller.startScan()
     }

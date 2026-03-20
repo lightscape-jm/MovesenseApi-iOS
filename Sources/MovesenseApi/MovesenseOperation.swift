@@ -24,6 +24,11 @@ class MovesenseOperationFactory {
         case .gyroConfig: return MovesenseOperationGyroConfig(request: request, observer: observer,
                                                               jsonDecoder: jsonDecoder, onCancel: onCancel)
 
+        case .settingsUartOn: return MovesenseOperationSettingsUartOn(request: request, observer: observer,
+                                                                      jsonDecoder: jsonDecoder, onCancel: onCancel)
+        case .systemTime: return MovesenseOperationSystemTime(request: request, observer: observer,
+                                                                      jsonDecoder: jsonDecoder, onCancel: onCancel)
+
         default: return MovesenseOperationBase(request: request, observer: observer,
                                                jsonDecoder: jsonDecoder, onCancel: onCancel)
         }
@@ -113,6 +118,14 @@ class MovesenseOperationBase: MovesenseOperationInternal {
             }
             response = MovesenseResponse.gyroInfo(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
                                                   self.request, decodedResponse.content)
+        case .magnInfo:
+            guard let decodedResponse = try? decode(MovesenseResponseContainer<MovesenseMagnInfo>.self,
+                                                    from: data) else {
+                response = nil
+                break
+            }
+            response = MovesenseResponse.magnInfo(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
+                                                  self.request, decodedResponse.content)
         case .info:
             guard let decodedResponse = try? decode(MovesenseResponseContainer<MovesenseInfo>.self,
                                                     from: data) else {
@@ -137,7 +150,7 @@ class MovesenseOperationBase: MovesenseOperationInternal {
             }
             response = MovesenseResponse.systemMode(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
                                                     self.request, decodedResponse.content)
-        case .acc, .ecg, .heartRate, .gyro, .led:
+        case .acc, .ecg, .heartRate, .gyro, .magn, .imu, .led:
             response = MovesenseResponse.response(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
                                                   self.request)
         default: response = nil
@@ -177,6 +190,20 @@ class MovesenseOperationBase: MovesenseOperationInternal {
                 break
             }
             event = MovesenseEvent.gyroscope(self.request, decodedEvent.body)
+        case .magn:
+            guard let decodedEvent = try? decode(MovesenseEventContainer<MovesenseMagn>.self,
+                                                 from: data) else {
+                event = nil
+                break
+            }
+            event = MovesenseEvent.magn(self.request, decodedEvent.body)
+        case .imu:
+            guard let decodedEvent = try? decode(MovesenseEventContainer<MovesenseIMU>.self,
+                                                 from: data) else {
+                event = nil
+                break
+            }
+            event = MovesenseEvent.imu(self.request, decodedEvent.body)
         case .heartRate:
             guard let decodedEvent = try? decode(MovesenseEventContainer<MovesenseHeartRate>.self,
                                                  from: data) else {
@@ -219,6 +246,37 @@ class MovesenseOperationSystemMode: MovesenseOperationBase {
             response = MovesenseResponse.systemMode(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
                                                     operationRequest, MovesenseSystemMode(currentMode: requestedMode,
                                                                                           nextMode: nil))
+        default: response = nil
+        }
+
+        if let response = response {
+            notifyObservers(MovesenseObserverEventOperation.operationResponse(response))
+        } else {
+            let error = MovesenseError.decodingError("Unable to decode response.")
+            notifyObservers(MovesenseObserverEventOperation.operationError(error))
+        }
+    }
+}
+
+class MovesenseOperationSettingsUartOn: MovesenseOperationBase {
+
+    override func handleResponse(status: Int, header: [AnyHashable: Any], data: Data) {
+        //print("Completion status: \(status)\nHeader:\n\(header)\n\(String(data: data, encoding: String.Encoding.utf8))")
+
+        let response: MovesenseResponse?
+        switch operationRequest.method {
+        case .get:
+            guard let decodedResponse = try? decode(MovesenseResponseContainer<Bool>.self,
+                                                    from: data) else {
+                response = nil
+                break
+            }
+            response = MovesenseResponse.settingsUartOn(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
+                                                    operationRequest, decodedResponse.content)
+
+        case .put:
+            response = MovesenseResponse.settingsUartOn(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
+                                                    operationRequest, nil)
         default: response = nil
         }
 
@@ -280,6 +338,37 @@ class MovesenseOperationGyroConfig: MovesenseOperationBase {
                                                     operationRequest, decodedResponse.content)
         case .put:
             response = MovesenseResponse.gyroConfig(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
+                                                    operationRequest, nil)
+        default: response = nil
+        }
+
+        if let response = response {
+            notifyObservers(MovesenseObserverEventOperation.operationResponse(response))
+        } else {
+            let error = MovesenseError.decodingError("Unable to decode response.")
+            notifyObservers(MovesenseObserverEventOperation.operationError(error))
+        }
+    }
+}
+
+class MovesenseOperationSystemTime: MovesenseOperationBase {
+
+    override func handleResponse(status: Int, header: [AnyHashable: Any], data: Data) {
+        //print("Completion status: \(status)\nHeader:\n\(header)\n\(String(data: data, encoding: String.Encoding.utf8))")
+
+        let response: MovesenseResponse?
+        switch operationRequest.method {
+        case .get:
+            guard let decodedResponse = try? decode(MovesenseResponseContainer<Int64>.self,
+                                                    from: data) else {
+                response = nil
+                break
+            }
+
+            response = MovesenseResponse.systemTime(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
+                                                    operationRequest, decodedResponse.content)
+        case .put:
+            response = MovesenseResponse.systemTime(MovesenseResponseCode.init(rawValue: status) ?? .unknown,
                                                     operationRequest, nil)
         default: response = nil
         }

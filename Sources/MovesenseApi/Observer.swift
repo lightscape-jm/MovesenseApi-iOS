@@ -36,21 +36,24 @@ public protocol Observable: AnyObject {
     func notifyObservers(_ event: ObserverEvent)
 }
 
+// Serial queue shared by all Observable instances for thread-safe observer management
+private let observerSyncQueue = DispatchQueue(label: "com.movesense.observer.sync")
+
 public extension Observable {
 
     func addObserver(_ observer: Observer) {
-        guard (observations.contains { $0.observer === observer } == false) else {
-            NSLog("Observable::addObserver: Observer added already.")
-            return
-        }
+        observerSyncQueue.sync {
+            guard (observations.contains { $0.observer === observer } == false) else {
+                NSLog("Observable::addObserver: Observer added already.")
+                return
+            }
 
-         DispatchQueue.global().sync {
             observations.append(Observation(observer: observer))
         }
     }
 
     func removeObserver(_ observer: Observer) {
-        DispatchQueue.global().sync {
+        observerSyncQueue.sync {
             observations = observations.filter {
                 ($0.observer != nil) && ($0.observer !== observer)
             }
@@ -58,8 +61,9 @@ public extension Observable {
     }
 
     func notifyObservers(_ event: ObserverEvent) {
-        observationQueue.async { [observations] in
-            observations.compactMap { $0.observer }.forEach { $0.handleEvent(event) }
+        let currentObservations = observerSyncQueue.sync { observations }
+        observationQueue.async {
+            currentObservations.compactMap { $0.observer }.forEach { $0.handleEvent(event) }
         }
     }
 }

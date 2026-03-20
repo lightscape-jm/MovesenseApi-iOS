@@ -82,6 +82,7 @@ public enum MovesenseObserverEventApi: ObserverEvent {
 
 public protocol MovesenseApi: Observable {
 
+    func mdsVersion() -> String?
     func startScan()
     func stopScan()
     func resetScan()

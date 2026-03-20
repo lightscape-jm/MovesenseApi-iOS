@@ -70,3 +70,11 @@ struct MovesenseMethodParameterSystemMode: MovesenseMethodParameter {
     let setter: (ValueType) -> MovesenseRequestParameter = MovesenseRequestParameter.systemMode
     let values: [ValueType]
 }
+
+struct MovesenseMethodParameterSystemTime: MovesenseMethodParameter {
+    typealias ValueType = Int64
+
+    let name: String = "Time"
+    let setter: (ValueType) -> MovesenseRequestParameter = MovesenseRequestParameter.systemTime
+    let values: [ValueType] = []
+}

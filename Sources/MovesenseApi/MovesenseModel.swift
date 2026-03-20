@@ -10,6 +10,7 @@ import Foundation
 enum MovesenseConstants {
 
     static let mdsConnectedDevices = "MDS/ConnectedDevices"
+    static let mdsVersion = "MDS/Whiteboard/MdsVersion"
 }
 
 struct MovesenseEventContainer<T: Decodable>: Decodable {
@@ -63,16 +64,24 @@ class MovesenseModel: Observable {
     internal var observations: [Observation] = [Observation]()
     private(set) var observationQueue: DispatchQueue = DispatchQueue.global()
 
+    private let deviceQueue = DispatchQueue(label: "com.movesense.model.devices")
     private var devices: [MovesenseDeviceConcrete] = [MovesenseDeviceConcrete]()
 
     subscript(serial: MovesenseSerialNumber) -> MovesenseDevice? {
-        return self.first { $0.serialNumber == serial }
+        return deviceQueue.sync {
+            devices.first { $0.serialNumber == serial }
+        }
     }
 
     func resetDevices() {
-        observationQueue.sync {
+        deviceQueue.sync {
             devices.removeAll { $0.deviceState == .disconnected }
         }
+    }
+
+    // Thread-safe snapshot of devices for iteration
+    var deviceSnapshot: [MovesenseDeviceConcrete] {
+        return deviceQueue.sync { devices }
     }
 }
 
@@ -82,33 +91,35 @@ extension MovesenseModel: Collection {
     typealias Index = ArrayType.Index
     typealias Element = ArrayType.Element
 
-    var startIndex: Index { return devices.startIndex }
-    var endIndex: Index { return devices.endIndex }
+    var startIndex: Index { return deviceQueue.sync { devices.startIndex } }
+    var endIndex: Index { return deviceQueue.sync { devices.endIndex } }
 
     subscript(index: Index) -> Element {
-        return devices[index]
+        return deviceQueue.sync { devices[index] }
     }
 
     func index(after i: Index) -> Index {
-        return devices.index(after: i)
+        return deviceQueue.sync { devices.index(after: i) }
     }
 }
 
 extension MovesenseModel: MovesenseControllerDelegate {
 
     func deviceDiscovered(_ device: MovesenseDeviceConcrete) {
-        guard (self.contains { $0.serialNumber == device.serialNumber }) == false else {
-            return
+        let alreadyExists = deviceQueue.sync {
+            self.devices.contains { $0.serialNumber == device.serialNumber }
         }
 
-        observationQueue.sync {
+        guard !alreadyExists else { return }
+
+        deviceQueue.sync {
             devices.append(device)
-            notifyObservers(MovesenseObserverEventModel.deviceDiscovered(device))
         }
+        notifyObservers(MovesenseObserverEventModel.deviceDiscovered(device))
     }
 
     func deviceConnecting(_ serialNumber: MovesenseSerialNumber) {
-        guard let device = (self.first { $0.serialNumber == serialNumber }) else {
+        guard let device = self[serialNumber] as? MovesenseDeviceConcrete else {
             let error = MovesenseError.integrityError("No such device for connecting.")
             notifyObservers(MovesenseObserverEventModel.modelError(error))
             return
@@ -119,7 +130,7 @@ extension MovesenseModel: MovesenseControllerDelegate {
 
     func deviceConnected(_ deviceInfo: MovesenseDeviceInfo,
                          _ connection: MovesenseConnection) {
-        guard let device = (self.first { $0.serialNumber == deviceInfo.serialNumber }) else {
+        guard let device = self[deviceInfo.serialNumber] as? MovesenseDeviceConcrete else {
             let error = MovesenseError.integrityError("No such connected device.")
             notifyObservers(MovesenseObserverEventModel.modelError(error))
             return
@@ -129,7 +140,7 @@ extension MovesenseModel: MovesenseControllerDelegate {
     }
 
     func deviceDisconnected(_ serialNumber: String) {
-        guard let device = (self.first { $0.serialNumber == serialNumber }) else {
+        guard let device = self[serialNumber] as? MovesenseDeviceConcrete else {
             let error = MovesenseError.integrityError("No such disconnected device.")
             notifyObservers(MovesenseObserverEventModel.modelError(error))
             return

@@ -82,6 +82,10 @@ public struct MovesenseAcc: Codable {
 
     public let timestamp: UInt32
     public let vectors: [MovesenseVector3D]
+    public init(timestamp: UInt32, vectors: [MovesenseVector3D]) {
+        self.timestamp = timestamp
+        self.vectors = vectors
+    }
 }
 
 public struct MovesenseAccConfig: Codable {
@@ -106,6 +110,10 @@ public struct MovesenseEcg: Codable {
 
     public let timestamp: UInt32
     public let samples: [Int32]
+    public init(timestamp: UInt32, samples: [Int32]) {
+        self.timestamp = timestamp
+        self.samples = samples
+    }
 }
 
 public struct MovesenseEcgInfo: Codable {
@@ -119,6 +127,10 @@ public struct MovesenseGyro: Codable {
 
     public let timestamp: UInt32
     public let vectors: [MovesenseVector3D]
+    public init(timestamp: UInt32, vectors: [MovesenseVector3D]) {
+        self.timestamp = timestamp
+        self.vectors = vectors
+    }
 }
 
 public struct MovesenseGyroConfig: Codable {
@@ -126,10 +138,43 @@ public struct MovesenseGyroConfig: Codable {
     public let dpsRange: UInt16
 }
 
+public struct MovesenseSystemTime: Codable {
+
+    public let value: Int64
+}
+
 public struct MovesenseGyroInfo: Codable {
 
     public let sampleRates: [UInt16]
     public let ranges: [UInt16]
+}
+
+public struct MovesenseMagn: Codable {
+
+    public let timestamp: UInt32
+    public let vectors: [MovesenseVector3D]
+    public init(timestamp: UInt32, vectors: [MovesenseVector3D]) {
+        self.timestamp = timestamp
+        self.vectors = vectors
+    }
+}
+
+public struct MovesenseMagnInfo: Codable {
+
+    public let sampleRates: [UInt16]
+    public let ranges: [UInt16]
+}
+
+public struct MovesenseIMU: Codable {
+
+    public let timestamp: UInt32
+    public let accVectors: [MovesenseVector3D]
+    public let gyroVectors: [MovesenseVector3D]
+    public init(timestamp: UInt32, accVectors: [MovesenseVector3D], gyroVectors: [MovesenseVector3D]) {
+        self.timestamp = timestamp
+        self.accVectors = accVectors
+        self.gyroVectors = gyroVectors
+    }
 }
 
 public struct MovesenseSystemEnergy: Codable {

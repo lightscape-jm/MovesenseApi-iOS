@@ -13,6 +13,8 @@ public enum MovesenseEvent {
     case acc(MovesenseRequest, MovesenseAcc)
     case ecg(MovesenseRequest, MovesenseEcg)
     case gyroscope(MovesenseRequest, MovesenseGyro)
+    case magn(MovesenseRequest, MovesenseMagn)
+    case imu(MovesenseRequest, MovesenseIMU)
     case heartRate(MovesenseRequest, MovesenseHeartRate)
 }
 
@@ -22,7 +24,9 @@ extension MovesenseEvent: CustomStringConvertible {
         switch self {
         case .acc(let request, let acc): return "request\n\(request)\nacc\n\(acc)"
         case .ecg(let request, let ecg): return "request\n\(request)\necg\n\(ecg)"
-        case .gyroscope(let request, let ecg): return "request\n\(request)\ngyro\n\(ecg)"
+        case .gyroscope(let request, let gyro): return "request\n\(request)\ngyro\n\(gyro)"
+        case .magn(let request, let magn): return "request\n\(request)\nmagn\n\(magn)"
+        case .imu(let request, let imu): return "request\n\(request)\nimu\n\(imu)"
         case .heartRate(let request, let hr): return "request\n\(request)\n\(hr.average) \(hr.rrData)"
         }
     }
@@ -34,6 +38,8 @@ extension MovesenseEvent: Codable {
         case acc
         case ecg
         case gyroscope
+        case magn
+        case imu
         case heartRate
     }
 
@@ -47,6 +53,10 @@ extension MovesenseEvent: Codable {
             try container.encode(ecg, forKey: .ecg)
         case .gyroscope(_, let gyro):
             try container.encode(gyro, forKey: .gyroscope)
+        case .magn(_, let magn):
+            try container.encode(magn, forKey: .magn)
+        case .imu(_, let imu):
+            try container.encode(imu, forKey: .imu)
         case .heartRate(_, let hr):
             try container.encode(hr, forKey: .heartRate)
         }
@@ -76,6 +86,22 @@ extension MovesenseEvent: Codable {
                                                              method: .subscribe,
                                                              parameters: nil),
                                             gyro)
+            return
+        }
+
+        if let magn = try? container.decode(MovesenseMagn.self, forKey: .magn) {
+            self = MovesenseEvent.magn(MovesenseRequest(resourceType: .magn,
+                                                             method: .subscribe,
+                                                             parameters: nil),
+                                            magn)
+            return
+        }
+
+        if let imu = try? container.decode(MovesenseIMU.self, forKey: .imu) {
+            self = MovesenseEvent.imu(MovesenseRequest(resourceType: .imu,
+                                                             method: .subscribe,
+                                                             parameters: nil),
+                                            imu)
             return
         }
 

@@ -49,6 +49,8 @@ public enum MovesenseRequestParameter {
     case isOn(_ isOn: Bool)
     case sampleRate(_ rate: UInt)
     case systemMode(_ mode: UInt8)
+    case settingsUartOn(_ state: Bool)
+    case systemTime(_ t: Int64)
 }
 
 extension MovesenseRequestParameter: CustomStringConvertible {
@@ -65,6 +67,8 @@ extension MovesenseRequestParameter: CustomStringConvertible {
         case .isOn: return "Is On"
         case .sampleRate: return "Sample Rate"
         case .systemMode: return "System Mode"
+        case .settingsUartOn: return "Uart state"
+        case .systemTime: return "Time"
         }
     }
 
@@ -76,6 +80,8 @@ extension MovesenseRequestParameter: CustomStringConvertible {
         case .isOn(let isOn): return "\(isOn)"
         case .sampleRate(let rate): return "\(rate) Hz"
         case .systemMode(let mode): return "\(mode)"
+        case .settingsUartOn(let state): return "\(state)"
+        case .systemTime(let t): return "\(t) micro s"
         }
     }
 
@@ -93,6 +99,8 @@ extension MovesenseRequestParameter: CustomStringConvertible {
         case .interval(let interval): return ("Interval", interval)
         case .isOn(let isOn): return ("isOn", isOn)
         case .systemMode(let mode): return ("NewState", mode)
+        case .settingsUartOn(let state): return ("State", state)
+        case .systemTime(let t): return ("value", t)
         default: return nil
         }
     }

@@ -18,15 +18,20 @@ class MovesenseDeviceConcrete: MovesenseDevice {
     let serialNumber: MovesenseSerialNumber
     let rssi: Int
 
-    // TODO: Implement notifications here
-    var deviceState: MovesenseDeviceState
+    private let stateQueue = DispatchQueue(label: "com.movesense.device.state")
+    private var _deviceState: MovesenseDeviceState = .disconnected
+
+    var deviceState: MovesenseDeviceState {
+        get { return stateQueue.sync { _deviceState } }
+        set { stateQueue.sync { _deviceState = newValue } }
+    }
 
     var isConnected: Bool {
-        return movesenseConnection != nil
+        return stateQueue.sync { _movesenseConnection != nil }
     }
 
     var deviceInfo: MovesenseDeviceInfo? {
-        return movesenseDeviceInfo
+        return stateQueue.sync { _movesenseDeviceInfo }
     }
 
     lazy var resources: [MovesenseResource] = deviceResources()
@@ -34,9 +39,8 @@ class MovesenseDeviceConcrete: MovesenseDevice {
     var observations: [Observation] = [Observation]()
     var observationQueue: DispatchQueue = DispatchQueue.global()
 
-    private var movesenseDeviceInfo: MovesenseDeviceInfo?
-    private var movesenseConnection: MovesenseConnection?
-
+    private var _movesenseDeviceInfo: MovesenseDeviceInfo?
+    private var _movesenseConnection: MovesenseConnection?
     private var connectionTimeout: Timer?
 
     init(uuid: UUID, localName: String, serialNumber: String, rssi: Int) {
@@ -44,12 +48,17 @@ class MovesenseDeviceConcrete: MovesenseDevice {
         self.localName = localName
         self.serialNumber = serialNumber
         self.rssi = rssi
-        self.deviceState = .disconnected
+    }
+
+    deinit {
+        connectionTimeout?.invalidate()
+        connectionTimeout = nil
     }
 
     func sendRequest(_ request: MovesenseRequest,
                             observer: Observer) -> MovesenseOperation? {
-        guard let connection = movesenseConnection else {
+        let connection = stateQueue.sync { _movesenseConnection }
+        guard let connection = connection else {
             let error = MovesenseError.requestError("No connection to device.")
             notifyObservers(MovesenseObserverEventDevice.deviceError(self, error))
             return nil
@@ -66,7 +75,8 @@ class MovesenseDeviceConcrete: MovesenseDevice {
 
     func sendRequest(_ request: MovesenseRequest,
                             handler: @escaping (MovesenseObserverEventOperation) -> Void) {
-        guard movesenseConnection != nil else {
+        let hasConnection = stateQueue.sync { _movesenseConnection != nil }
+        guard hasConnection else {
             let error = MovesenseError.requestError("No connection to device.")
             handler(MovesenseObserverEventOperation.operationError(error))
             return
@@ -77,12 +87,14 @@ class MovesenseDeviceConcrete: MovesenseDevice {
     }
 
     func deviceConnecting() {
+        NSLog("MovesenseDevice::deviceConnecting serial=\(serialNumber) uuid=\(uuid)")
         deviceState = .connecting
         notifyObservers(MovesenseObserverEventDevice.deviceConnecting(self))
 
         connectionTimeout = Timer.scheduledTimer(withTimeInterval: Constants.connectionTimeout, repeats: false) { [weak self] _ in
             guard let this = self else { return }
 
+            NSLog("MovesenseDevice::connectionTimeout serial=\(this.serialNumber) - disconnecting after \(Constants.connectionTimeout)s")
             Movesense.api.disconnectDevice(this)
             let event = MovesenseObserverEventDevice.deviceError(this, MovesenseError.deviceError("Connection timeout."))
             this.notifyObservers(event)
@@ -91,8 +103,10 @@ class MovesenseDeviceConcrete: MovesenseDevice {
 
     func deviceConnected(_ deviceInfo: MovesenseDeviceInfo,
                                   _ connection: MovesenseConnection) {
-        movesenseDeviceInfo = deviceInfo
-        movesenseConnection = connection
+        stateQueue.sync {
+            _movesenseDeviceInfo = deviceInfo
+            _movesenseConnection = connection
+        }
 
         connectionTimeout?.invalidate()
         connectionTimeout = nil
@@ -104,8 +118,10 @@ class MovesenseDeviceConcrete: MovesenseDevice {
     }
 
     func deviceDisconnected() {
-        movesenseDeviceInfo = nil
-        movesenseConnection = nil
+        stateQueue.sync {
+            _movesenseDeviceInfo = nil
+            _movesenseConnection = nil
+        }
 
         connectionTimeout?.invalidate()
         connectionTimeout = nil
@@ -120,16 +136,21 @@ class MovesenseDeviceConcrete: MovesenseDevice {
                 MovesenseResourceAccConfig([2, 4, 8, 16]),
                 MovesenseResourceAccInfo(),
                 MovesenseResourceAppInfo(),
-                MovesenseResourceEcg([128, 256, 512]),
+                MovesenseResourceEcg([125, 128, 200, 250, 256, 500, 512]),
                 MovesenseResourceEcgInfo(),
                 MovesenseResourceInfo(),
                 MovesenseResourceHeartRate(),
                 MovesenseResourceGyro([13, 26, 52, 104, 208, 416, 833, 1666]),
                 MovesenseResourceGyroConfig([245, 500, 1000, 2000]),
                 MovesenseResourceGyroInfo(),
+                MovesenseResourceMagn([13, 26, 52, 104, 208, 416, 833, 1666]),
+                MovesenseResourceMagnInfo(),
+                MovesenseResourceIMU([13, 26, 52, 104, 208, 416, 833, 1666]),
                 MovesenseResourceLed(),
                 MovesenseResourceSystemEnergy(),
-                MovesenseResourceSystemMode([1, 2, 3, 4, 5, 10, 11, 12])]
+                MovesenseResourceSystemMode([1, 2, 3, 4, 5, 10, 11, 12]),
+                MovesenseResourceSettingsUartOn(),
+                MovesenseResourceSystemTime()]
     }
 }
 

@@ -165,6 +165,31 @@ extension MovesenseGyroInfo {
     }
 }
 
+extension MovesenseMagn {
+
+    enum CodingKeys: String, CodingKey {
+        case timestamp = "Timestamp"
+        case vectors = "ArrayMagn"
+    }
+}
+
+extension MovesenseMagnInfo {
+
+    enum CodingKeys: String, CodingKey {
+        case sampleRates = "SampleRates"
+        case ranges = "Ranges"
+    }
+}
+
+extension MovesenseIMU {
+
+    enum CodingKeys: String, CodingKey {
+        case timestamp = "Timestamp"
+        case accVectors = "ArrayAcc"
+        case gyroVectors = "ArrayGyro"
+    }
+}
+
 extension MovesenseSystemEnergy {
 
     enum CodingKeys: String, CodingKey {
