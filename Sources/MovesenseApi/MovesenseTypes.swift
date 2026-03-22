@@ -121,6 +121,8 @@ public struct MovesenseEcgInfo: Codable {
     public let currentSampleRate: UInt16
     public let availableSampleRates: [UInt16]
     public let arraySize: UInt16
+    public let lowPass: [Int]?
+    public let highPass: [Double]?
 }
 
 public struct MovesenseGyro: Codable {
@@ -162,7 +164,7 @@ public struct MovesenseMagn: Codable {
 public struct MovesenseMagnInfo: Codable {
 
     public let sampleRates: [UInt16]
-    public let ranges: [UInt16]
+    public let ranges: [UInt16]?
 }
 
 public struct MovesenseIMU: Codable {

@@ -108,6 +108,8 @@ extension MovesenseEcgInfo {
         case currentSampleRate = "CurrentSampleRate"
         case availableSampleRates = "AvailableSampleRates"
         case arraySize = "ArraySize"
+        case lowPass = "LowPass"
+        case highPass = "HighPass"
     }
 }
 
