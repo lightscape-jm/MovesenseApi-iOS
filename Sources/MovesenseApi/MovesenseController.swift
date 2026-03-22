@@ -187,6 +187,34 @@ class MovesenseController: NSObject {
                 }
             })
     }
+
+    // MARK: - Raw MDS Request Passthrough
+
+    /// Perform a raw MDS GET request without typed resource handling.
+    /// Used for DataLogger, Logbook, and other endpoints without typed API support.
+    func rawGet(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        mdsWrapper.doGet(uri, contract: contract) { response in
+            completion(Int(response.statusCode), response.bodyData)
+        }
+    }
+
+    func rawPut(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        mdsWrapper.doPut(uri, contract: contract) { response in
+            completion(Int(response.statusCode), response.bodyData)
+        }
+    }
+
+    func rawPost(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        mdsWrapper.doPost(uri, contract: contract) { response in
+            completion(Int(response.statusCode), response.bodyData)
+        }
+    }
+
+    func rawDelete(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        mdsWrapper.doDelete(uri, contract: contract) { response in
+            completion(Int(response.statusCode), response.bodyData)
+        }
+    }
 }
 
 extension MovesenseController: MovesenseBleControllerDelegate {

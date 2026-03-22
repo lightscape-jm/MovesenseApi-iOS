@@ -97,6 +97,24 @@ internal class MovesenseApiConcrete: MovesenseApi {
 
         device.sendRequest(request, handler: handler)
     }
+
+    // MARK: - Raw MDS Passthrough
+
+    func rawGet(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        controller.rawGet(uri, contract: contract, completion: completion)
+    }
+
+    func rawPut(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        controller.rawPut(uri, contract: contract, completion: completion)
+    }
+
+    func rawPost(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        controller.rawPost(uri, contract: contract, completion: completion)
+    }
+
+    func rawDelete(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void) {
+        controller.rawDelete(uri, contract: contract, completion: completion)
+    }
 }
 
 extension MovesenseApiConcrete: Observer {

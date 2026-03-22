@@ -102,4 +102,10 @@ public protocol MovesenseApi: Observable {
 
     func sendRequestForDevice(_ device: MovesenseDevice, request: MovesenseRequest,
                               handler: @escaping (MovesenseObserverEventOperation) -> Void)
+
+    // Raw MDS request passthrough for endpoints without typed API (DataLogger, Logbook, etc.)
+    func rawGet(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void)
+    func rawPut(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void)
+    func rawPost(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void)
+    func rawDelete(_ uri: String, contract: [String: Any], completion: @escaping (_ statusCode: Int, _ body: Data) -> Void)
 }
