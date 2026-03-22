@@ -181,9 +181,9 @@ public struct MovesenseIMU: Codable {
 
 public struct MovesenseSystemEnergy: Codable {
 
-    public let percentage: UInt8
-    public let milliVolts: UInt16?
-    public let internalResistance: UInt8?
+    public let percentage: Int
+    public let milliVolts: Int?
+    public let internalResistance: Int?
 }
 
 public struct MovesenseSystemMode: Codable {
